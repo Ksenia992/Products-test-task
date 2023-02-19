@@ -4,7 +4,7 @@
     <div class="content">
       <div class="content__inputs">
         <div class="content__input">
-                <input type="text" v-model="tableData.product_name" :placeholder="'Product name'">
+          <input type="text" v-model="tableData.product_name" :placeholder="'Product name'">
           <p v-if="v$.product_name.$error"> {{ v$.product_name.$errors[0].$message }}</p>
         </div>
         <div class="content__input">
@@ -16,20 +16,20 @@
           <p v-if="v$.qty.$error"> {{ v$.qty.$errors[0].$message }}</p>
         </div>
       </div>
-      <Button @click="addProduct" :type="'add'" />
+      <Button @click="addProduct" :type="'add'" :disabled="disabled">add</Button>
     </div>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, computed } from 'vue'
+import { defineComponent, reactive, ref, computed, watch, toRaw } from 'vue'
 import Button from '../components/button/button.vue'
 
 import { useStore } from 'vuex'
 import { useRouter } from 'vue-router'
 import useValidate from '@vuelidate/core'
-import { required, numeric, minLength, maxLength } from '@vuelidate/validators'
-import { ITable } from "../interfaces/iTable"
+import { required, numeric, minLength, maxLength, minValue } from '@vuelidate/validators'
+import { ITable } from "../types/iTable"
 
 export default defineComponent ({
   name: 'CreateProduct',
@@ -38,18 +38,19 @@ export default defineComponent ({
     const store = useStore()
     const router = useRouter()
 
-    const tableData = ref<ITable>({
+    const disabled = ref<boolean>(false)
+
+    const tableData = reactive<ITable>({
       product_name: '',
       id: Date.now(),
-      checked: false,
-      price: '',
-      qty: ''
+      price: null,
+      qty: null
     })
 
     const rules = computed(() => ({
       product_name: { required, minLength: minLength(4), maxLength: maxLength(12) },
       price: { required, numeric },
-      qty: { required, numeric },
+      qty: { required, numeric, minValue: minValue(1) },
     }))
 
     const v$ = useValidate(rules, tableData)
@@ -57,7 +58,7 @@ export default defineComponent ({
     async function addProduct () {
       await v$.value.$validate()
       if (!v$.value.$error) {
-        await store.commit('SET_DATA', tableData.value)
+        await store.dispatch('productsModule/addProduct', toRaw(tableData))
         await router.push('/products')
         resetForm()
       }
@@ -67,10 +68,13 @@ export default defineComponent ({
       v$.value.$reset()
     }
 
+    watch(() => v$.value.$error, () => disabled.value = v$.value.$error)
+
     return {
       tableData,
       v$,
-      addProduct
+      addProduct,
+      disabled
     }
   }
 })

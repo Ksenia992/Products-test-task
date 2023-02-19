@@ -1,52 +1,47 @@
 <template>
-<button :type="type" :style="style">{{text}}</button>
+<button :type="type" :class="['button', btnType]" :disabled="disabled"><slot /></button>
 </template>
 
 <script lang="ts">
-import { ref, defineComponent, computed } from 'vue'
+import { computed, defineComponent } from 'vue'
 export default defineComponent ({
   name: "Button",
   props: {
     type: {
       type: String,
       required: true
+    },
+    disabled: {
+      type: Boolean
     }
   },
   setup(props) {
-    const text = ref<string>('')
-    const color = ref<string>('')
-
-    const btnType = computed(():string => props.type)
-
-    function btnStyle () {
-      if (btnType.value === 'add') {
-        text.value = 'add'
-        color.value = '#1a1a1a'
+    const btnType = computed(() => {
+      switch (props.type) {
+        case 'add':
+          return 'add-btn'
+        case 'delete':
+          return 'delete-btn'
       }
-      else if (btnType.value === 'delete') {
-        text.value = 'delete'
-        color.value = '#FF0000'
-      }
-    }
-    btnStyle()
-
-    const style = computed(() => ({
-      '--bg-color': color.value
-    }))
+    })
     return {
-      text,
-      style
+      btnType
     }
   }
 })
 </script>
 
 <style scoped lang="scss">
-button {
+.button {
   max-height: 40px;
-  background-color: var(--bg-color);
   &:hover {
     border-color: white;
   }
+}
+.add-btn {
+  background-color: #1a1a1a;
+}
+.delete-btn {
+  background-color: #FF0000;
 }
 </style>
